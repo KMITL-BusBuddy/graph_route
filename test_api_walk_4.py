@@ -83,6 +83,8 @@ def find_multiple_paths(G, start, end, max_paths=5, avoid_nodes=None, walk_thres
                     "travel_time_seconds": travel_time
                 }
                 line_counter += 1
+            
+            print(f"🧀 เส้นทางที่พบ: {path} | walk_count = {walk_count}")
 
             all_paths.append({
                 "path": path,
@@ -129,8 +131,17 @@ def find_paths_with_must_pass(G, start, end, must_pass_nodes, max_paths=5, avoid
     all_segments.append(final_segment)
     
     combined_paths = []
+
     def combine_segments(segments, path_so_far=[], cost_so_far=0, walk_count_so_far=0, path_details_so_far=[], num_route_changes_so_far=0):
+        if len(combined_paths) >= max_paths:
+            print(f"🔴 พบเส้นทางครบ {max_paths} เส้นทางแล้ว")
+            return  # Stop if the number of combined paths reaches the max limit
+        
         if not segments:
+            if walk_count_so_far > walk_threshold:
+                print(f"🚨 ข้ามเส้นทางที่เดินมากเกิน {walk_threshold} ครั้ง: {path_so_far}")
+                return  # Skip paths that exceed the threshold
+
             combined_paths.append({
                 "path": path_so_far,
                 "cost": cost_so_far,
@@ -147,8 +158,16 @@ def find_paths_with_must_pass(G, start, end, must_pass_nodes, max_paths=5, avoid
             new_walk_count = walk_count_so_far + segment["walk_count"]
             new_path_details = path_details_so_far + segment["path_details"]
             new_num_route_changes = num_route_changes_so_far + segment["num_route_changes"]
+
+            # Check walk threshold before continuing
+            if new_walk_count > walk_threshold:
+                print(f"🚨 ข้ามเส้นทางที่เดินมากเกิน {walk_threshold} ครั้ง: {new_path}")
+                continue  # Skip this segment
+            
+            print(f"🥚 กำลังรวมเส้นทาง: {new_path} | walk_count = {new_walk_count}")
+
             combine_segments(segments[1:], new_path, new_cost, new_walk_count, new_path_details, new_num_route_changes)
-    
+
     combine_segments(all_segments)
     
     print(f"✅ ค้นพบเส้นทางที่ต้องผ่าน {len(combined_paths)} เส้นทาง")
