@@ -62,7 +62,7 @@ def find_multiple_paths(G, start, end, max_paths=5, avoid_nodes=None, walk_thres
                 # Adjust travel time if the route is a "WALK"
                 if route_id == "WALK":
                     print(f"🚶‍♀️ เวลาเดิม {travel_time} วินาที")
-                    travel_time = travel_time / 2  # Dividing the travel time by 2 for walking routes
+                    travel_time = travel_time / 2.5  # Dividing the travel time by 2.5 for walking routes
                     print(f"🚶‍♀️ เส้นทางเดิน: ลดเวลาเดินทางเหลือ {travel_time} วินาที")
 
                 cost += travel_time
