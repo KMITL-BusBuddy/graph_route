@@ -16,6 +16,19 @@ def validate_nodes(G, start, end):
     print("✅ ตรวจสอบจุดเริ่มต้นและปลายทางสำเร็จ")
     return True, None
 
+def filter_duplicate_routes(paths):
+    unique_paths = {}
+    
+    for path_data in paths:
+        route_key = tuple(sorted(set(
+            segment["route_id"] for segment in path_data["path_details"]
+        )))  # สร้างคีย์จาก route_id ที่พบในเส้นทาง
+
+        if route_key not in unique_paths or path_data["total_travel_time_seconds"] < unique_paths[route_key]["total_travel_time_seconds"]:
+            unique_paths[route_key] = path_data  # เลือกเส้นทางที่มีเวลาน้อยที่สุด
+
+    return list(unique_paths.values())
+
 def find_multiple_paths(G, start, end, max_paths=5, avoid_nodes=None, walk_threshold=2, max_skipped=10):
     print(f"🔍 กำลังค้นหาเส้นทางจาก {start} ไปยัง {end}...")
     if avoid_nodes is None:
@@ -59,10 +72,9 @@ def find_multiple_paths(G, start, end, max_paths=5, avoid_nodes=None, walk_thres
                 route_id = str(edge_data.get('route_id', 'N/A'))
                 travel_time = edge_data.get('weight', 0)
 
-                # Adjust travel time if the route is a "WALK"
                 if route_id == "WALK":
                     print(f"🚶‍♀️ เวลาเดิม {travel_time} วินาที")
-                    travel_time = travel_time / 2.5  # Dividing the travel time by 2.5 for walking routes
+                    travel_time = travel_time / 2.5  # ลดเวลาเดินทางสำหรับเส้นทางเดิน
                     print(f"🚶‍♀️ เส้นทางเดิน: ลดเวลาเดินทางเหลือ {travel_time} วินาที")
 
                 cost += travel_time
@@ -72,16 +84,16 @@ def find_multiple_paths(G, start, end, max_paths=5, avoid_nodes=None, walk_thres
                     num_route_changes += 1
                     current_group = {
                         "route_id": route_id,
-                        "lines": {}
+                        "lines": []  # เปลี่ยนจาก dict เป็น list
                     }
                     path_details.append(current_group)
-                    line_counter = 1
 
-                current_group["lines"][f"line{line_counter}"] = {
+                current_group["lines"].append({  # แทนที่ "lineX" ด้วย list
                     "start": path[i],
                     "end": path[i + 1],
                     "travel_time_seconds": travel_time
-                }
+                })
+
                 line_counter += 1
             
             print(f"🧀 เส้นทางที่พบ: {path} | walk_count = {walk_count}")
@@ -214,7 +226,12 @@ def find_paths():
         return jsonify({}), 200
 
     print(f"✅ พบเส้นทางที่สามารถเดินทางได้จำนวน {len(paths)} เส้นทาง")
-    return jsonify({"paths": paths}), 200
+
+    # กรองเส้นทางที่ route_id ซ้ำกันและเลือกเส้นทางที่ดีที่สุด
+    filtered_paths = filter_duplicate_routes(paths)
+    print(f"🔍 คัดกรองเส้นทางเหลือ {len(filtered_paths)} เส้นทาง")
+    
+    return jsonify({"paths": filtered_paths}), 200
 
 @app.route('/health', methods=['GET'])
 def health_check():
